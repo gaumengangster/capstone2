@@ -1,0 +1,42 @@
+services:
+  prometheus:
+      image: prom/prometheus
+      ports:
+          - 9090:9090
+      volumes:
+          - ./prometheus:/etc/prometheus
+          - prometheus-data:/prometheus
+      command: --web.enable-lifecycle  --config.file=/etc/prometheus/prometheus.yml
+      networks:
+          - ml-services-monitoring
+
+  grafana:
+      image: grafana/grafana
+      ports:
+          - 3005:3000
+      restart: unless-stopped
+      volumes:
+          - ./grafana/provisioning:/etc/grafana/provisioning
+          - ./grafana/dashboards:/etc/grafana/dashboards
+          - grafana-data:/var/lib/grafana
+      networks:
+          - ml-services-monitoring
+
+  evidently_service:
+    build:
+      context: evidently_service
+      dockerfile: Dockerfile
+    depends_on:
+       - grafana
+    ports:
+       - "8085:8085"
+    networks:
+       - ml-services-monitoring
+
+volumes:
+    grafana-data:
+    prometheus-data:
+
+networks:
+    ml-services-monitoring:
+        driver: bridge
